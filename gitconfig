@@ -1,0 +1,21 @@
+[user]
+	name = tchak
+	email = paul@chavard.net
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+	ui = true
+[alias]
+	sh = !git-sh
+	ci = commit
+	co = checkout
+	b = branch
+	st = status
+	who = shortlog -s --
+	fl = log -p
+[core]
+	editor = mate -wl1
+	excludefile = /Users/tchak/.gitignore
+[help]
+	autocorrect = 1
