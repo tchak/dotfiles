@@ -16,6 +16,6 @@
 	fl = log -p
 [core]
 	editor = mate -wl1
-	excludefile = /Users/tchak/.gitignore
+	excludesfile = /Users/tchak/.gitignore
 [help]
 	autocorrect = 1

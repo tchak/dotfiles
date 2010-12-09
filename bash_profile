@@ -12,9 +12,6 @@ export HISTCONTROL=ignoredups
 # update the values of LINES and COLUMNS.
 shopt -s checkwinsize
 
-# make less more friendly for non-text input files, see lesspipe(1)
-#[ -x /usr/bin/lesspipe ] && eval "$(lesspipe)"
-
 # set a fancy prompt (non-color, unless we know we "want" color)
 case "$TERM" in
 xterm-color)
@@ -36,13 +33,14 @@ esac
 
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:$PATH"
+export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:/usr/local/share/npm/bin:$PATH"
 export GREP_OPTIONS="--color=auto"
 export GREP_COLOR="4;33"
+export NODE_PATH="/usr/local/lib/node:$NODE_PATH"
 
 # Alias definitions.
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
 # rvm-install added line:
-if [[ -s ~/.rvm/scripts/rvm ]] ; then source ~/.rvm/scripts/rvm ; fi
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"  # This loads RVM into a shell session.
 
