@@ -42,5 +42,5 @@ export NODE_PATH="/usr/local/lib/node:$NODE_PATH"
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
 # rvm-install added line:
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"  # This loads RVM into a shell session.
+#[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"  # This loads RVM into a shell session.
 
