@@ -33,7 +33,7 @@ esac
 
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:/usr/local/share/npm/bin:$PATH"
+export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:/usr/local/share/npm/bin:$HOME/var/airsdk/bin:$PATH"
 export GREP_OPTIONS="--color=auto"
 export GREP_COLOR="4;33"
 export NODE_PATH="/usr/local/lib/node:$NODE_PATH"
