@@ -19,3 +19,9 @@
 	excludesfile = /Users/tchak/.gitignore
 [help]
 	autocorrect = 1
+[difftool]
+  prompt = false
+[diff]
+  tool = Kaleidoscope
+[difftool "Kaleidoscope"]
+  cmd = ksdiff-wrapper git \"$LOCAL\" \"$REMOTE\"

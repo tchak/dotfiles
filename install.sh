@@ -5,6 +5,8 @@ cp ./bash_aliases ~/.bash_aliases
 cp ./gemrc ~/.gemrc
 cp ./gitconfig ~/.gitconfig
 cp ./gitignore ~/.gitignore
+cp ./git-prompt.conf ~/.git-prompt.conf
+cp ./git-prompt.sh ~/.git-prompt.sh
 source ~/.bash_profile
 
 #mkdir ~/.bin
