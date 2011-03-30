@@ -10,7 +10,7 @@ export HISTCONTROL=ignoredups
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
-#shopt -s checkwinsize
+shopt -s checkwinsize
 
 # set a fancy prompt (non-color, unless we know we "want" color)
 # case "$TERM" in
