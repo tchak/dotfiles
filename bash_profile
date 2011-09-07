@@ -12,37 +12,24 @@ export HISTCONTROL=ignoredups
 # update the values of LINES and COLUMNS.
 shopt -s checkwinsize
 
-# set a fancy prompt (non-color, unless we know we "want" color)
-# case "$TERM" in
-# xterm-color)
-#     PS1='$\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-#     ;;
-# *)
-#     PS1='$\u@\h:\w\$ '
-#     ;;
-# esac
-# 
-# # If this is an xterm set the title to user@host:dir
-# case "$TERM" in
-# xterm*|rxvt*)
-#     PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME}: ${PWD/$HOME/~}\007"'
-#     ;;
-# *)
-#     ;;
-# esac
-
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:/usr/local/share/npm/bin:$HOME/var/airsdk/bin:$PATH"
 export GREP_OPTIONS="--color=auto"
 export GREP_COLOR="4;33"
+
+# LOCAL
+export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:$PATH"
+
+# NODE
+export PATH="/usr/local/share/npm/bin:$PATH"
 export NODE_PATH="/usr/local/lib/node:$NODE_PATH"
+
+# RUBY
+export PATH="$HOME/.rbenv/bin:$PATH"
 
 # Alias definitions.
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
 [[ $- == *i* ]]   &&   . ~/.git-prompt.sh
 
-# rvm-install added line:
-#[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"  # This loads RVM into a shell session.
-
+eval "$(rbenv init -)"
