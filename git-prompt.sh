@@ -6,8 +6,9 @@
 
         #####  read config file if any.
 
-        unset   dir_color rc_color user_id_color root_id_color init_vcs_color clean_vcs_color
-        unset modified_vcs_color added_vcs_color addmoded_vcs_color untracked_vcs_color op_vcs_color detached_vcs_color
+        unset dir_color rc_color user_id_color root_id_color init_vcs_color clean_vcs_color
+        unset modified_vcs_color added_vcs_color addmoded_vcs_color untracked_vcs_color op_vcs_color detached_vcs_color hex_vcs_color
+        unset rawhex_len
 
         conf=git-prompt.conf;                   [[ -r $conf ]]  && . $conf
         conf=/etc/git-prompt.conf;              [[ -r $conf ]]  && . $conf
@@ -39,11 +40,11 @@
         fi
         unset cols
 
-	#### prompt character, for root/non-root
-	prompt_char=${prompt_char:-'>'}
-	root_prompt_char=${root_prompt_char:-'>'}
+    #### prompt character, for root/non-root
+    prompt_char=${prompt_char:-'>'}
+    root_prompt_char=${root_prompt_char:-'>'}
 
-        #### vcs state colors
+        #### vcs colors
                  init_vcs_color=${init_vcs_color:-WHITE}        # initial
                 clean_vcs_color=${clean_vcs_color:-blue}        # nothing to commit (working directory clean)
              modified_vcs_color=${modified_vcs_color:-red}      # Changed but not updated:
@@ -53,8 +54,14 @@
                    op_vcs_color=${op_vcs_color:-MAGENTA}
              detached_vcs_color=${detached_vcs_color:-RED}
 
+                  hex_vcs_color=${hex_vcs_color:-BLACK}         # gray
+
+
         max_file_list_length=${max_file_list_length:-100}
+        short_hostname=${short_hostname:-off}
         upcase_hostname=${upcase_hostname:-on}
+        count_only=${count_only:-off}
+        rawhex_len=${rawhex_len:-5}
 
         aj_max=20
 
@@ -109,8 +116,10 @@
              YELLOW='\['`tput setaf 3; tput bold`'\]'
                BLUE='\['`tput setaf 4; tput bold`'\]'
             MAGENTA='\['`tput setaf 5; tput bold`'\]'
-               CYAN='\['`tput setaf 6; tput bold`'\]'  # why 14 doesn't work?
+               CYAN='\['`tput setaf 6; tput bold`'\]'
               WHITE='\['`tput setaf 7; tput bold`'\]'
+
+                dim='\['`tput sgr0; tput setaf p1`'\]'  # half-bright
 
             bw_bold='\['`tput bold`'\]'
 
@@ -128,6 +137,7 @@
                    op_vcs_color=${!op_vcs_color}
              addmoded_vcs_color=${!addmoded_vcs_color}
              detached_vcs_color=${!detached_vcs_color}
+                  hex_vcs_color=${!hex_vcs_color}
 
         unset PROMPT_COMMAND
 
@@ -169,9 +179,9 @@ cwd_truncate() {
                         ;;
                 *)
                         # if bash < v3.2  then don't truncate
-			if [[  ${BASH_VERSINFO[0]} -eq 3   &&   ${BASH_VERSINFO[1]} -le 1  || ${BASH_VERSINFO[0]} -lt 3 ]] ;  then
-				return
-			fi
+            if [[  ${BASH_VERSINFO[0]} -eq 3   &&   ${BASH_VERSINFO[1]} -le 1  || ${BASH_VERSINFO[0]} -lt 3 ]] ;  then
+                return
+            fi
                         ;;
         esac
 
@@ -189,21 +199,21 @@ cwd_truncate() {
                 [[ $cwd_middle_max < 0  ]]  &&  cwd_middle_max=0
 
 
-		# trunc middle if over limit
+        # trunc middle if over limit
                 if   [[ ${#path_middle}   -gt   $(( $cwd_middle_max + ${#elipses_marker} + 5 )) ]];   then
-			
-			# truncate
-			middle_tail=${path_middle:${#path_middle}-${cwd_middle_max}}
+            
+            # truncate
+            middle_tail=${path_middle:${#path_middle}-${cwd_middle_max}}
 
-			# trunc on dir boundary (trunc 1st, probably tuncated dir)
-			exp31='[[ $middle_tail =~ [^/]*/(.*)$ ]]'
-			eval $exp31
-			middle_tail=${BASH_REMATCH[1]}
+            # trunc on dir boundary (trunc 1st, probably tuncated dir)
+            exp31='[[ $middle_tail =~ [^/]*/(.*)$ ]]'
+            eval $exp31
+            middle_tail=${BASH_REMATCH[1]}
 
-			# use truncated only if we cut at least 4 chars
-			if [[ $((  ${#path_middle} - ${#middle_tail}))  -gt 4  ]];  then
-				cwd=$path_head$elipses_marker$middle_tail$path_last_dir
-			fi
+            # use truncated only if we cut at least 4 chars
+            if [[ $((  ${#path_middle} - ${#middle_tail}))  -gt 4  ]];  then
+                cwd=$path_head$elipses_marker$middle_tail$path_last_dir
+            fi
                 fi
         fi
         return
@@ -212,7 +222,10 @@ cwd_truncate() {
 
 set_shell_label() {
 
-        xterm_label() { echo  -n "]2;${@}" ; }   # FIXME: replace hardcodes with terminfo codes
+        xterm_label() {
+                local args="$*"
+                echo  -n "]2;${args:0:200}" ;    # FIXME: replace hardcodes with terminfo codes
+        }   
 
         screen_label() {
                 # FIXME: run this only if screen is in xterm (how to test for this?)
@@ -265,7 +278,7 @@ set_shell_label() {
 
         # we don't need tty name under X11
         case $TERM in
-                xterm* | rxvt* | gnome-terminal | konsole | eterm | wterm | cygwin)  unset tty ;;
+                xterm* | rxvt* | gnome-terminal | konsole | eterm* | wterm | cygwin)  unset tty ;;
                 *);;
         esac
 
@@ -284,7 +297,9 @@ set_shell_label() {
         #then
 
         host=${HOSTNAME}
-        #host=`hostname -s`
+        if [[ $short_hostname = "on" ]]; then
+            host=`hostname -s`
+        fi
         host=${host#$default_host}
         uphost=`echo ${host} | tr a-z A-Z`
         if [[ $upcase_hostname = "on" ]]; then
@@ -303,7 +318,6 @@ set_shell_label() {
 
         # we might already have short host name
         host=${host%.$default_domain}
-
 
 #################################################################### WHO_WHERE
         #  [[user@]host[-tty]]
@@ -399,38 +413,54 @@ parse_git_status() {
         vcs=git
 
         ##########################################################   GIT STATUS
-	file_regex='\([^/ ]*\/\{0,1\}\).*'
-	added_files=()
-	modified_files=()
-	untracked_files=()
+    file_regex='\([^/ ]*\/\{0,1\}\).*'
+    added_files=()
+    modified_files=()
+    untracked_files=()
+        freshness="$dim"
         unset branch status modified added clean init added mixed untracked op detached
 
-	# quoting hell
+    # quoting hell
         eval " $(
                 git status 2>/dev/null |
                     sed -n '
                         s/^# On branch /branch=/p
-                        s/^nothing to commit (working directory clean)/clean=clean/p
-                        s/^# Initial commit/init=init/p
+                        s/^nothing to commi.*/clean=clean/p
+                        s/^# Initial commi.*/init=init/p
+
+                        s/^# Your branch is ahead of .[/[:alnum:]]\+. by [[:digit:]]\+ commit.*/freshness=${WHITE}↑/p
+                        s/^# Your branch is behind .[/[:alnum:]]\+. by [[:digit:]]\+ commit.*/freshness=${YELLOW}↓/p
+                        s/^# Your branch and .[/[:alnum:]]\+. have diverged.*/freshness=${YELLOW}↕/p
 
                         /^# Changes to be committed:/,/^# [A-Z]/ {
                             s/^# Changes to be committed:/added=added;/p
 
-                            s/^#	modified:   '"$file_regex"'/	[[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
-                            s/^#	new file:   '"$file_regex"'/	[[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
-                            s/^#	renamed:[^>]*> '"$file_regex"'/	[[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
-                            s/^#	copied:[^>]*> '"$file_regex"'/ 	[[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
+                            s/^#    modified:   '"$file_regex"'/    [[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
+                            s/^#    new file:   '"$file_regex"'/    [[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
+                            s/^#    renamed:[^>]*> '"$file_regex"'/ [[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
+                            s/^#    copied:[^>]*> '"$file_regex"'/  [[ \" ${added_files[*]} \" =~ \" \1 \" ]] || added_files[${#added_files[@]}]=\"\1\"/p
                         }
 
                         /^# Changed but not updated:/,/^# [A-Z]/ {
                             s/^# Changed but not updated:/modified=modified;/p
-                            s/^#	modified:   '"$file_regex"'/	[[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
-                            s/^#	unmerged:   '"$file_regex"'/	[[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
+                            s/^#    modified:   '"$file_regex"'/    [[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
+                            s/^#    unmerged:   '"$file_regex"'/    [[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
+                        }
+
+                        /^# Changes not staged for commit:/,/^# [A-Z]/ {
+                            s/^# Changes not staged for commit:/modified=modified;/p
+                            s/^#    modified:   '"$file_regex"'/    [[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
+                            s/^#    unmerged:   '"$file_regex"'/    [[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
+                        }
+
+                        /^# Unmerged paths:/,/^[^#]/ {
+                            s/^# Unmerged paths:/modified=modified;/p
+                            s/^#    both modified:\s*'"$file_regex"'/   [[ \" ${modified_files[*]} \" =~ \" \1 \" ]] || modified_files[${#modified_files[@]}]=\"\1\"/p
                         }
 
                         /^# Untracked files:/,/^[^#]/{
                             s/^# Untracked files:/untracked=untracked;/p
-                            s/^#	'"$file_regex"'/		[[ \" ${untracked_files[*]} ${modified_files[*]} ${added_files[*]} \" =~ \" \1 \" ]] || untracked_files[${#untracked_files[@]}]=\"\1\"/p
+                            s/^#    '"$file_regex"'/        [[ \" ${untracked_files[*]} ${modified_files[*]} ${added_files[*]} \" =~ \" \1 \" ]] || untracked_files[${#untracked_files[@]}]=\"\1\"/p
                         }
                     '
         )"
@@ -482,9 +512,13 @@ parse_git_status() {
 
 
         ####  GET GIT HEX-REVISION
-        rawhex=`git rev-parse HEAD 2>/dev/null`
-        rawhex=${rawhex/HEAD/}
-        rawhex=${rawhex:0:6}
+        if  [[ $rawhex_len -gt 0 ]] ;  then
+                rawhex=`git rev-parse HEAD 2>/dev/null`
+                rawhex=${rawhex/HEAD/}
+                rawhex="=$hex_vcs_color${rawhex:0:$rawhex_len}"
+        else
+                rawhex=""
+        fi
 
         #### branch
         branch=${branch/master/M}
@@ -510,7 +544,7 @@ parse_git_status() {
                         fi
                         #branch="<$branch>"
                 fi
-                vcs_info="$branch$white=$rawhex"
+                vcs_info="$branch$freshness$rawhex"
 
         fi
  }
@@ -554,23 +588,33 @@ parse_vcs_status() {
                 eval $old_nullglob
 
                 if [[ $vim_glob ]];  then
-                    vim_file=${vim_glob#.}
-                    vim_file=${vim_file/.sw?/}
+                    set $vim_glob
+                    #vim_file=${vim_glob#.}
+                    if [[ $# > 1 ]] ; then 
+                            vim_files="*"
+                    else
+                            vim_file=${1#.}
+                            vim_file=${vim_file/.sw?/}
+                            [[ .${vim_file}.swp -nt $vim_file ]]  && vim_files=$vim_file
+                    fi
                     # if swap is newer,  then this is unsaved vim session
-                    #[[ .${vim_file}.swp -nt $vim_file ]]  && vim_files=$vim_file
                     # [temoto custom] if swap is older, then it must be deleted, so show all swaps.
-                    vim_files=$vim_file
                 fi
         fi
 
 
         ### file list
         unset file_list
-        [[ ${added_files[0]}     ]]  &&  file_list+=" "$added_vcs_color${added_files[@]}
-        [[ ${modified_files[0]}  ]]  &&  file_list+=" "$modified_vcs_color${modified_files[@]}
-        [[ ${untracked_files[0]} ]]  &&  file_list+=" "$untracked_vcs_color${untracked_files[@]}
-        [[ ${vim_files}          ]]  &&  file_list+=" "${RED}vim:${vim_files}
-        file_list=${file_list:+:$file_list}
+        if [[ $count_only = "on" ]] ; then
+                [[ ${added_files[0]}     ]]  &&  file_list+=" "${added_vcs_color}+${#added_files[@]}
+                [[ ${modified_files[0]}  ]]  &&  file_list+=" "${modified_vcs_color}*${#modified_files[@]}
+                [[ ${untracked_files[0]} ]]  &&  file_list+=" "${untracked_vcs_color}?${#untracked_files[@]}
+        else
+                [[ ${added_files[0]}     ]]  &&  file_list+=" "$added_vcs_color${added_files[@]}
+                [[ ${modified_files[0]}  ]]  &&  file_list+=" "$modified_vcs_color${modified_files[@]}
+                [[ ${untracked_files[0]} ]]  &&  file_list+=" "$untracked_vcs_color${untracked_files[@]}
+        fi
+        [[ ${vim_files}          ]]  &&  file_list+=" "${MAGENTA}vim:${vim_files}
 
         if [[ ${#file_list} -gt $max_file_list_length ]]  ;  then
                 file_list=${file_list:0:$max_file_list_length}
@@ -580,7 +624,7 @@ parse_vcs_status() {
         fi
 
 
-        head_local="(${vcs_info}$vcs_color${file_list}$vcs_color)"
+        head_local="$vcs_color(${vcs_info}$vcs_color${file_list}$vcs_color)"
 
         ### fringes
         head_local="${head_local+$vcs_color$head_local }"
@@ -595,17 +639,25 @@ disable_set_shell_label() {
 # show currently executed command in label
 enable_set_shell_label() {
         disable_set_shell_label
-	# check for BASH_SOURCE being empty, no point running set_shell_label on every line of .bashrc
+    # check for BASH_SOURCE being empty, no point running set_shell_label on every line of .bashrc
         trap '[[ -z "$BASH_SOURCE" && ($BASH_COMMAND != prompt_command_function) ]] &&
-	     set_shell_label $BASH_COMMAND' DEBUG  >& /dev/null
+         set_shell_label $BASH_COMMAND' DEBUG  >& /dev/null
  }
 
+declare -ft disable_set_shell_label
+declare -ft enable_set_shell_label
+
 # autojump (see http://wiki.github.com/joelthelion/autojump)
+
+# TODO reverse the line order of a file
+#awk ' { line[NR] = $0 }
+#      END  { for (i=NR;i>0;i--)
+#             print line[i] }' listlogs
+
 j (){
         : ${1? usage: j dir-beginning}
         # go in ring buffer starting from current index.  cd to first matching dir
-        for (( i=(aj_idx+1)%aj_max;   i != aj_idx%aj_max;  i=++i%aj_max )) ; do
-                #echo == ${aj_dir_list[$i]} == $i
+        for (( i=(aj_idx-1)%aj_max;   i != aj_idx%aj_max;  i=(--i+aj_max)%aj_max )) ; do
                 if [[ ${aj_dir_list[$i]} =~ ^.*/$1[^/]*$ ]] ; then
                         cd "${aj_dir_list[$i]}"
                         return
