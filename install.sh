@@ -7,4 +7,5 @@ cp ./gitconfig ~/.gitconfig
 cp ./gitignore ~/.gitignore
 cp ./git-prompt.conf ~/.git-prompt.conf
 cp ./git-prompt.sh ~/.git-prompt.sh
+cp ./git-completion.sh ~/.git-completion.sh
 source ~/.bash_profile

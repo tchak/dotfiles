@@ -20,16 +20,16 @@ export GREP_COLOR="4;33"
 # LOCAL
 export PATH="$HOME/.bin:/usr/local/bin:/usr/local/sbin:$PATH"
 
+export EDITOR="vim"
+
 # NODE
 export PATH="/usr/local/share/npm/bin:$PATH"
 export NODE_PATH="/usr/local/lib/node:$NODE_PATH"
-
-# RUBY
-export PATH="$HOME/.rbenv/bin:$PATH"
 
 # Alias definitions.
 [[ -f ~/.bash_aliases ]] && . ~/.bash_aliases
 
 [[ $- == *i* ]]   &&   . ~/.git-prompt.sh
+source ~/.git-completion.bash
 
 eval "$(rbenv init -)"
